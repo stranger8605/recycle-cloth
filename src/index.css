@@ -1,0 +1,114 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 140 20% 97%;
+    --foreground: 150 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 150 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 150 30% 12%;
+
+    --primary: 152 55% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 42 90% 55%;
+    --secondary-foreground: 30 50% 15%;
+
+    --muted: 140 15% 92%;
+    --muted-foreground: 150 10% 45%;
+
+    --accent: 152 40% 90%;
+    --accent-foreground: 152 55% 25%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 140 15% 88%;
+    --input: 140 15% 88%;
+    --ring: 152 55% 38%;
+
+    --radius: 0.75rem;
+
+    --eco-gradient: linear-gradient(135deg, hsl(152, 55%, 38%), hsl(170, 50%, 42%));
+    --eco-gradient-warm: linear-gradient(135deg, hsl(42, 90%, 55%), hsl(28, 85%, 55%));
+    --eco-gradient-hero: linear-gradient(160deg, hsl(152, 55%, 30%), hsl(170, 50%, 35%), hsl(140, 45%, 40%));
+    --eco-shadow: 0 4px 20px -4px hsl(152 55% 38% / 0.25);
+    --eco-shadow-lg: 0 10px 40px -8px hsl(152 55% 38% / 0.3);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 150 20% 8%;
+    --foreground: 140 15% 92%;
+    --card: 150 20% 12%;
+    --card-foreground: 140 15% 92%;
+    --popover: 150 20% 12%;
+    --popover-foreground: 140 15% 92%;
+    --primary: 152 55% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 42 80% 50%;
+    --secondary-foreground: 30 50% 10%;
+    --muted: 150 15% 18%;
+    --muted-foreground: 140 10% 60%;
+    --accent: 152 30% 20%;
+    --accent-foreground: 152 40% 80%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 150 15% 20%;
+    --input: 150 15% 20%;
+    --ring: 152 55% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .eco-gradient {
+    background: var(--eco-gradient);
+  }
+
+  .eco-gradient-warm {
+    background: var(--eco-gradient-warm);
+  }
+
+  .eco-gradient-hero {
+    background: var(--eco-gradient-hero);
+  }
+
+  .eco-shadow {
+    box-shadow: var(--eco-shadow);
+  }
+
+  .eco-shadow-lg {
+    box-shadow: var(--eco-shadow-lg);
+  }
+
+  .eco-text-gradient {
+    background: var(--eco-gradient);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+}
