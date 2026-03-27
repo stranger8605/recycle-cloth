@@ -173,12 +173,12 @@ const QuantityPage = () => {
 
   return (
     <StepLayout
-      step={6}
-      totalSteps={8}
+      step={4}
+      totalSteps={6}
       title="Cloth Quantity"
       subtitle="How many of each type?"
       onNext={handleNext}
-      onBack={() => navigate('/contact')}
+      onBack={() => navigate('/shops')}
       nextLabel={`Continue (${totalItems} items)`}
     >
       <div className="space-y-3">

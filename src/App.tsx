@@ -14,10 +14,10 @@ import ShopOwnerRegisterPage from "./pages/ShopOwnerRegisterPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
 
 import ClothesPage from "./pages/ClothesPage";
-import DistrictPage from "./pages/DistrictPage";
+
 import CategoriesPage from "./pages/CategoriesPage";
 import ShopsPage from "./pages/ShopsPage";
-import ContactPage from "./pages/ContactPage";
+
 import QuantityPage from "./pages/QuantityPage";
 import PricingPage from "./pages/PricingPage";
 import ThankYouPage from "./pages/ThankYouPage";
@@ -56,10 +56,10 @@ const App = () => (
               {/* Protected Recycling Flow */}
 
               <Route path="/clothes" element={<ProtectedRoute><ClothesPage /></ProtectedRoute>} />
-              <Route path="/district" element={<ProtectedRoute><DistrictPage /></ProtectedRoute>} />
+
               <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />
               <Route path="/shops" element={<ProtectedRoute><ShopsPage /></ProtectedRoute>} />
-              <Route path="/contact" element={<ProtectedRoute><ContactPage /></ProtectedRoute>} />
+
               <Route path="/quantity" element={<ProtectedRoute><QuantityPage /></ProtectedRoute>} />
               <Route path="/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
               <Route path="/thankyou" element={<ProtectedRoute><ThankYouPage /></ProtectedRoute>} />

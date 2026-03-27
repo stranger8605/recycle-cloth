@@ -129,8 +129,8 @@ const PricingPage = () => {
 
   return (
     <StepLayout
-      step={7}
-      totalSteps={8}
+      step={5}
+      totalSteps={6}
       title="Pricing Summary"
       subtitle="Your estimated earnings"
       onNext={handleNext}

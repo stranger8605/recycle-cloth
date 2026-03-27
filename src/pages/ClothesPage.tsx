@@ -65,13 +65,13 @@ const ClothesPage = () => {
 
   const handleNext = () => {
     update({ selectedClothes: selected, clothPhotos: photos });
-    navigate('/district');
+    navigate('/categories');
   };
 
   return (
     <StepLayout
-      step={2}
-      totalSteps={8}
+      step={1}
+      totalSteps={6}
       title="Select Cloth Types"
       subtitle="Choose what you want to recycle"
       onNext={handleNext}

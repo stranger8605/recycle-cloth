@@ -33,12 +33,12 @@ const CategoriesPage = () => {
 
   return (
     <StepLayout
-      step={4}
-      totalSteps={9}
+      step={2}
+      totalSteps={6}
       title="Choose Category"
       subtitle="How would you like to recycle?"
       onNext={handleNext}
-      onBack={() => navigate('/district')}
+      onBack={() => navigate('/clothes')}
       nextDisabled={!selected}
     >
       <div className="space-y-4">

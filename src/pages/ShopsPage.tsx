@@ -40,13 +40,13 @@ const ShopsPage = () => {
 
   const handleNext = () => {
     update({ selectedShop: selected });
-    navigate('/contact');
+    navigate('/quantity');
   };
 
   return (
     <StepLayout
-      step={5}
-      totalSteps={9}
+      step={3}
+      totalSteps={6}
       title="Select a Shop"
       subtitle={`Verified shops in ${state.district || 'your area'}`}
       onNext={handleNext}

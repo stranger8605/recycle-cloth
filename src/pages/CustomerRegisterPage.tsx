@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, ShieldCheck, Loader2, Camera, MapPin } from 'lucide-react';
+import { User, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, ShieldCheck, Loader2, Camera, MapPin, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sendOtp as twilioSendOtp, verifyOtp as twilioVerifyOtp } from '@/lib/twilioService';
@@ -28,6 +28,12 @@ const passwordRules = [
 
 
 
+const districts = [
+  'Chennai', 'Coimbatore', 'Madurai', 'Salem', 'Trichy',
+  'Tirunelveli', 'Erode', 'Vellore', 'Thanjavur', 'Dindigul',
+  'Kanchipuram', 'Cuddalore',
+];
+
 const inputClass = 'w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring';
 
 const CustomerRegisterPage = () => {
@@ -40,6 +46,7 @@ const CustomerRegisterPage = () => {
   const [mobile, setMobile] = useState('');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
+  const [district, setDistrict] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -165,6 +172,7 @@ const CustomerRegisterPage = () => {
 
         phone: phone || null,
         address: address.trim() || null,
+        district: district || null,
         photo_url: photoUrl,
       });
 
@@ -333,11 +341,26 @@ const CustomerRegisterPage = () => {
             />
           </div>
 
+          {/* District */}
+          <div className="relative">
+            <Navigation className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <select
+              value={district}
+              onChange={(e) => setDistrict(e.target.value)}
+              className={`${inputClass} appearance-none ${!district ? 'text-muted-foreground' : ''}`}
+            >
+              <option value="">Select District</option>
+              {districts.map((d) => (
+                <option key={d} value={d}>{d}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Address */}
           <div className="relative">
             <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
             <textarea
-              placeholder="Address"
+              placeholder="Full Address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               rows={2}
