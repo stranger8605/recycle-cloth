@@ -10,8 +10,7 @@ interface Order {
   id: string;
   order_id: string;
   phone: string | null;
-  gender: string | null;
-  age_range: string | null;
+
   selected_clothes: string[] | null;
   cloth_quantities: Record<string, number> | null;
   district: string | null;

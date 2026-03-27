@@ -27,7 +27,7 @@ const LoginPage = () => {
   const handleLogin = () => {
     // Note: In production, authenticate via server-side before setting isLoggedIn
     update({ phone, isLoggedIn: true });
-    navigate('/profile');
+    navigate('/clothes');
   };
 
   return (

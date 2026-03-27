@@ -12,7 +12,7 @@ import CustomerRegisterPage from "./pages/CustomerRegisterPage";
 import ShopOwnerLoginPage from "./pages/ShopOwnerLoginPage";
 import ShopOwnerRegisterPage from "./pages/ShopOwnerRegisterPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
-import ProfilePage from "./pages/ProfilePage";
+
 import ClothesPage from "./pages/ClothesPage";
 import DistrictPage from "./pages/DistrictPage";
 import CategoriesPage from "./pages/CategoriesPage";
@@ -54,7 +54,7 @@ const App = () => (
               <Route path="/admin/login" element={<AdminLoginPage />} />
 
               {/* Protected Recycling Flow */}
-              <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+
               <Route path="/clothes" element={<ProtectedRoute><ClothesPage /></ProtectedRoute>} />
               <Route path="/district" element={<ProtectedRoute><DistrictPage /></ProtectedRoute>} />
               <Route path="/categories" element={<ProtectedRoute><CategoriesPage /></ProtectedRoute>} />

@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, ShieldCheck, Loader2 } from 'lucide-react';
+import { User, Phone, Lock, Eye, EyeOff, CheckCircle, XCircle, ShieldCheck, Loader2, Camera, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { sendOtp as twilioSendOtp, verifyOtp as twilioVerifyOtp } from '@/lib/twilioService';
@@ -26,11 +26,20 @@ const passwordRules = [
   { test: (pw: string) => /[^A-Za-z0-9]/.test(pw), label: 'One special character' },
 ];
 
+
+
+const inputClass = 'w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring';
+
 const CustomerRegisterPage = () => {
   const navigate = useNavigate();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [username, setUsername] = useState('');
   const [name, setName] = useState('');
+
   const [mobile, setMobile] = useState('');
+  const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -42,6 +51,27 @@ const CustomerRegisterPage = () => {
   const [verifyingOtp, setVerifyingOtp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
+  // Photo state
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Please select an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB.');
+      return;
+    }
+    setPhotoFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setPhotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const generateOtp = async () => {
     if (!/^[0-9]{10}$/.test(mobile)) return;
     setSendingOtp(true);
@@ -50,7 +80,7 @@ const CustomerRegisterPage = () => {
     if (result.success) {
       setOtpSent(true);
       setOtpVerified(false);
-      toast.success('OTP sent to your mobile number!');
+      toast.success(`Your OTP code is: ${result.code}`, { duration: 15000 });
     } else {
       toast.error(result.error || 'Failed to send OTP. Please try again.');
     }
@@ -106,12 +136,36 @@ const CustomerRegisterPage = () => {
         return;
       }
 
+      // Upload photo if selected
+      let photoUrl: string | null = null;
+      if (photoFile) {
+        const fileExt = photoFile.name.split('.').pop();
+        const fileName = `${username.trim()}_${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from('customer-photos')
+          .upload(fileName, photoFile);
+
+        if (uploadError) {
+          console.error('Photo upload error:', uploadError);
+          toast.error('Failed to upload photo. Registering without photo.');
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('customer-photos')
+            .getPublicUrl(fileName);
+          photoUrl = urlData.publicUrl;
+        }
+      }
+
       const { error } = await supabase.from('customers').insert({
         username: username.trim(),
         name: name.trim(),
         mobile,
         password,
         mobile_verified: true,
+
+        phone: phone || null,
+        address: address.trim() || null,
+        photo_url: photoUrl,
       });
 
       if (error) {
@@ -146,6 +200,33 @@ const CustomerRegisterPage = () => {
         </div>
 
         <div className="space-y-3">
+          {/* Profile Photo Upload */}
+          <div className="flex justify-center mb-2">
+            <div
+              className="relative cursor-pointer group"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <div className="w-24 h-24 rounded-full border-2 border-dashed border-input bg-card flex items-center justify-center overflow-hidden transition-all group-hover:border-primary group-hover:shadow-md">
+                {photoPreview ? (
+                  <img src={photoPreview} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 text-muted-foreground" />
+                )}
+              </div>
+              <div className="absolute bottom-0 right-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                <Camera className="w-4 h-4 text-primary-foreground" />
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePhotoSelect}
+                className="hidden"
+              />
+            </div>
+          </div>
+          <p className="text-center text-xs text-muted-foreground -mt-1">Tap to upload photo</p>
+
           {/* Username */}
           <div className="relative">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -154,18 +235,23 @@ const CustomerRegisterPage = () => {
               placeholder="Username (min 3 chars)"
               value={username}
               onChange={(e) => setUsername(e.target.value.replace(/\s/g, '').toLowerCase())}
-              className="w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              className={inputClass}
             />
           </div>
 
           {/* Full Name */}
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="w-full px-4 py-3 rounded-xl border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
+            />
+          </div>
+
+
 
           {/* Mobile + OTP */}
           <div className="space-y-2">
@@ -182,7 +268,7 @@ const CustomerRegisterPage = () => {
                 }}
                 maxLength={10}
                 disabled={otpVerified}
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-60"
+                className={`${inputClass} disabled:opacity-60`}
               />
             </div>
 
@@ -232,6 +318,31 @@ const CustomerRegisterPage = () => {
                 </div>
               </>
             )}
+          </div>
+
+          {/* Phone Number (alternative) */}
+          <div className="relative">
+            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <input
+              type="tel"
+              placeholder="Phone Number (optional)"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+              maxLength={10}
+              className={inputClass}
+            />
+          </div>
+
+          {/* Address */}
+          <div className="relative">
+            <MapPin className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+            <textarea
+              placeholder="Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              rows={2}
+              className="w-full pl-10 pr-4 py-3 rounded-xl border border-input bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring resize-none"
+            />
           </div>
 
           {/* Password */}

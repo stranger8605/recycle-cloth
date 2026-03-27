@@ -42,7 +42,7 @@ const CustomerLoginPage = () => {
     });
 
     toast.success(`Welcome back, ${user.name}!`);
-    navigate('/profile');
+    navigate('/clothes');
   };
 
   return (

@@ -1,11 +1,10 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 
 interface RecycleState {
-  // Profile
-  gender: string;
-  ageRange: string;
+
   // Clothes
   selectedClothes: string[];
+  clothPhotos: string[];
   // Location
   district: string;
   // Category
@@ -32,9 +31,9 @@ interface RecycleContextType {
 }
 
 const initialState: RecycleState = {
-  gender: '',
-  ageRange: '',
+
   selectedClothes: [],
+  clothPhotos: [],
   district: '',
   category: '',
   selectedShop: '',

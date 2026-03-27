@@ -57,8 +57,7 @@ const PricingPage = () => {
     const { error } = await supabase.from('orders').insert({
       order_id: orderId,
       phone: state.contactPhone,
-      gender: state.gender,
-      age_range: state.ageRange,
+
       selected_clothes: state.selectedClothes,
       cloth_quantities: state.clothQuantities as any,
       district: state.district,

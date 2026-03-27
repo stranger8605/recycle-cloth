@@ -23,6 +23,11 @@ export type Database = {
           password: string
           mobile_verified: boolean
           created_at: string
+          age: number | null
+          gender: string | null
+          phone: string | null
+          address: string | null
+          photo_url: string | null
         }
         Insert: {
           id?: string
@@ -32,6 +37,11 @@ export type Database = {
           password: string
           mobile_verified?: boolean
           created_at?: string
+          age?: number | null
+          gender?: string | null
+          phone?: string | null
+          address?: string | null
+          photo_url?: string | null
         }
         Update: {
           id?: string
@@ -41,6 +51,11 @@ export type Database = {
           password?: string
           mobile_verified?: boolean
           created_at?: string
+          age?: number | null
+          gender?: string | null
+          phone?: string | null
+          address?: string | null
+          photo_url?: string | null
         }
         Relationships: []
       }
@@ -146,6 +161,30 @@ export type Database = {
           total_amount?: number | null
           total_items?: number | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      otp_codes: {
+        Row: {
+          id: string
+          phone: string
+          code: string
+          created_at: string
+          expires_at: string
+        }
+        Insert: {
+          id?: string
+          phone: string
+          code: string
+          created_at?: string
+          expires_at: string
+        }
+        Update: {
+          id?: string
+          phone?: string
+          code?: string
+          created_at?: string
+          expires_at?: string
         }
         Relationships: []
       }

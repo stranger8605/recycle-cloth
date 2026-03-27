@@ -52,7 +52,7 @@ const ShopOwnerRegisterPage = () => {
     if (result.success) {
       setOtpSent(true);
       setOtpVerified(false);
-      toast.success('OTP sent to your mobile number!');
+      toast.success(`Your OTP code is: ${result.code}`, { duration: 15000 });
     } else {
       toast.error(result.error || 'Failed to send OTP. Please try again.');
     }
