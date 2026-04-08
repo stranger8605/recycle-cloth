@@ -197,14 +197,17 @@ const QuantityPage = () => {
         created_at: new Date().toISOString(),
       };
 
+      // ALWAYS save to localStorage so orders appear in "My Orders"
+      const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+      localOrders.push(orderData);
+      localStorage.setItem('eco_local_orders', JSON.stringify(localOrders));
+
+      // Also try Supabase (non-blocking)
       try {
         const { error } = await supabase.from('orders').insert(orderData as any);
-        if (error) throw error;
+        if (error) console.warn('Supabase save failed:', error.message);
       } catch (err: any) {
-        console.warn('Supabase unreachable, saving donation order locally:', err.message);
-        const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
-        localOrders.push(orderData);
-        localStorage.setItem('eco_local_orders', JSON.stringify(localOrders));
+        console.warn('Supabase unreachable:', err.message);
       }
 
       update({ clothQuantities: quantities, clothPhotos: photoUrls, orderId });

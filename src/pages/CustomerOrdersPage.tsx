@@ -57,26 +57,31 @@ const CustomerOrdersPage = () => {
   const fetchOrders = async () => {
     setLoading(true);
     const phone = customer?.mobile || '';
+    const username = customer?.username || '';
 
     let allOrders: Order[] = [];
 
     try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('contact_phone', phone)
-        .order('created_at', { ascending: false });
+      // Try matching by phone first, then by all orders if phone is empty
+      if (phone) {
+        const { data, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('contact_phone', phone)
+          .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      allOrders = (data as unknown as Order[]) || [];
+        if (error) throw error;
+        allOrders = (data as unknown as Order[]) || [];
+      }
     } catch {
       // Supabase unreachable — use local only
     }
 
-    // Merge with local orders
-    const localOrders: Order[] = JSON.parse(localStorage.getItem('eco_local_orders') || '[]')
-      .filter((o: any) => o.contact_phone === phone || o.phone === phone)
-      .map((o: any) => ({
+    // Get ALL local orders — this device's orders belong to this user
+    const allLocalOrders: any[] = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+
+    // Show ALL local orders (no filtering — single-device, single-user)
+    const localOrders: Order[] = allLocalOrders.map((o: any) => ({
         order_id: o.order_id,
         selected_clothes: o.selected_clothes || null,
         cloth_quantities: o.cloth_quantities || null,
