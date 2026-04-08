@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useRecycle } from '@/context/RecycleContext';
 import { useAuth, CustomerUser } from '@/context/AuthContext';
 import StepLayout from '@/components/StepLayout';
-import { Check, Camera, X, ImagePlus } from 'lucide-react';
+import { Check, Camera, X, ImagePlus, Package, ClipboardList } from 'lucide-react';
 import { toast } from 'sonner';
 
 const clothTypes = [
@@ -95,6 +95,16 @@ const ClothesPage = () => {
       nextLabel={`Continue (${selected.length} selected)`}
     >
       <div className="space-y-5">
+        {/* View My Orders Button */}
+        <button
+          onClick={() => navigate('/customer/orders')}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border border-emerald-500/20 hover:border-emerald-500/40 transition-all flex items-center justify-center gap-2 group"
+        >
+          <ClipboardList className="w-4 h-4 text-primary group-hover:scale-110 transition-transform" />
+          <span className="text-sm font-semibold text-foreground">View My Orders</span>
+          <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full font-medium">History</span>
+        </button>
+
         {/* Cloth Type Grid */}
         <div className="grid grid-cols-2 gap-3">
           {clothTypes.map((cloth) => {
