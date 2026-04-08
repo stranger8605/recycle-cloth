@@ -20,6 +20,7 @@ import ShopsPage from "./pages/ShopsPage";
 
 import QuantityPage from "./pages/QuantityPage";
 import PricingPage from "./pages/PricingPage";
+import RedeemPage from "./pages/RedeemPage";
 import ThankYouPage from "./pages/ThankYouPage";
 import AdminPage from "./pages/AdminPage";
 import ShopDashboardPage from "./pages/ShopDashboardPage";
@@ -62,6 +63,7 @@ const App = () => (
 
               <Route path="/quantity" element={<ProtectedRoute><QuantityPage /></ProtectedRoute>} />
               <Route path="/pricing" element={<ProtectedRoute><PricingPage /></ProtectedRoute>} />
+              <Route path="/redeem" element={<ProtectedRoute><RedeemPage /></ProtectedRoute>} />
               <Route path="/thankyou" element={<ProtectedRoute><ThankYouPage /></ProtectedRoute>} />
 
               {/* Shop Owner Dashboard */}

@@ -87,7 +87,11 @@ const CustomerRegisterPage = () => {
     if (result.success) {
       setOtpSent(true);
       setOtpVerified(false);
-      toast.success(`Your OTP code is: ${result.code}`, { duration: 15000 });
+      if (result.sentViaWhatsApp) {
+        toast.success(`OTP sent to your WhatsApp! 📱 Check your messages.`, { duration: 10000 });
+      } else {
+        toast.success(`Your OTP code is: ${result.code}`, { duration: 15000 });
+      }
     } else {
       toast.error(result.error || 'Failed to send OTP. Please try again.');
     }
@@ -122,20 +126,28 @@ const CustomerRegisterPage = () => {
     if (!canSubmit) return;
     setSubmitting(true);
 
+    const customerData = {
+      id: crypto.randomUUID(),
+      username: username.trim(),
+      name: name.trim(),
+      mobile,
+      password,
+      mobile_verified: true,
+      phone: phone || null,
+      address: address.trim() || null,
+      district: district || null,
+      photo_url: photoPreview || null,
+    };
+
     try {
-      // Check if username or mobile already exists
+      // Try Supabase first
       const { data: existingUser, error: checkError } = await supabase
         .from('customers')
         .select('id')
         .or(`username.eq."${username.trim()}",mobile.eq."${mobile}"`)
         .limit(1);
 
-      if (checkError) {
-        console.error('Supabase check error:', checkError);
-        toast.error(`Registration failed: ${checkError.message}`);
-        setSubmitting(false);
-        return;
-      }
+      if (checkError) throw checkError;
 
       if (existingUser && existingUser.length > 0) {
         toast.error('Username or mobile number already registered.');
@@ -152,10 +164,7 @@ const CustomerRegisterPage = () => {
           .from('customer-photos')
           .upload(fileName, photoFile);
 
-        if (uploadError) {
-          console.error('Photo upload error:', uploadError);
-          toast.error('Failed to upload photo. Registering without photo.');
-        } else {
+        if (!uploadError) {
           const { data: urlData } = supabase.storage
             .from('customer-photos')
             .getPublicUrl(fileName);
@@ -164,30 +173,33 @@ const CustomerRegisterPage = () => {
       }
 
       const { error } = await supabase.from('customers').insert({
-        username: username.trim(),
-        name: name.trim(),
-        mobile,
-        password,
-        mobile_verified: true,
-
-        phone: phone || null,
-        address: address.trim() || null,
-        district: district || null,
-        photo_url: photoUrl,
+        ...customerData,
+        photo_url: photoUrl || customerData.photo_url,
       });
 
-      if (error) {
-        console.error('Supabase insert error:', error);
-        toast.error(`Registration failed: ${error.message}`);
-        setSubmitting(false);
-        return;
-      }
+      if (error) throw error;
 
       toast.success('Registration successful! Please login.');
       navigate('/customer/login');
     } catch (err: any) {
-      console.error('Registration error:', err);
-      toast.error(`Registration failed: ${err.message || 'Unknown error'}`);
+      console.warn('Supabase unreachable, using local storage:', err.message);
+
+      // ── Fallback: save to localStorage ──
+      const localCustomers = JSON.parse(localStorage.getItem('eco_local_customers') || '[]');
+
+      // Check if already exists locally
+      if (localCustomers.some((c: any) => c.username === customerData.username || c.mobile === customerData.mobile)) {
+        toast.error('Username or mobile number already registered.');
+        setSubmitting(false);
+        return;
+      }
+
+      localCustomers.push(customerData);
+      localStorage.setItem('eco_local_customers', JSON.stringify(localCustomers));
+
+      toast.success('Registration successful! Please login.');
+      navigate('/customer/login');
+    } finally {
       setSubmitting(false);
     }
   };

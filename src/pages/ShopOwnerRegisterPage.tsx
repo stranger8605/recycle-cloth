@@ -52,7 +52,11 @@ const ShopOwnerRegisterPage = () => {
     if (result.success) {
       setOtpSent(true);
       setOtpVerified(false);
-      toast.success(`Your OTP code is: ${result.code}`, { duration: 15000 });
+      if (result.sentViaWhatsApp) {
+        toast.success(`OTP sent to your WhatsApp! 📱 Check your messages.`, { duration: 10000 });
+      } else {
+        toast.success(`Your OTP code is: ${result.code}`, { duration: 15000 });
+      }
     } else {
       toast.error(result.error || 'Failed to send OTP. Please try again.');
     }
@@ -89,6 +93,17 @@ const ShopOwnerRegisterPage = () => {
     if (!canSubmit) return;
     setSubmitting(true);
 
+    const shopData = {
+      id: crypto.randomUUID(),
+      name: name.trim(),
+      username: username.trim(),
+      shop_name: shopName.trim(),
+      shop_location: shopLocation.trim(),
+      mobile,
+      password,
+      mobile_verified: true,
+    };
+
     try {
       const { data: existing, error: checkError } = await supabase
         .from('shop_owners')
@@ -96,12 +111,7 @@ const ShopOwnerRegisterPage = () => {
         .or(`username.eq."${username.trim()}",mobile.eq."${mobile}"`)
         .limit(1);
 
-      if (checkError) {
-        console.error('Supabase check error:', checkError);
-        toast.error(`Registration failed: ${checkError.message}`);
-        setSubmitting(false);
-        return;
-      }
+      if (checkError) throw checkError;
 
       if (existing && existing.length > 0) {
         toast.error('Username or mobile number already registered.');
@@ -109,28 +119,31 @@ const ShopOwnerRegisterPage = () => {
         return;
       }
 
-      const { error } = await supabase.from('shop_owners').insert({
-        name: name.trim(),
-        username: username.trim(),
-        shop_name: shopName.trim(),
-        shop_location: shopLocation.trim(),
-        mobile,
-        password,
-        mobile_verified: true,
-      });
+      const { error } = await supabase.from('shop_owners').insert(shopData);
 
-      if (error) {
-        console.error('Supabase insert error:', error);
-        toast.error(`Registration failed: ${error.message}`);
-        setSubmitting(false);
-        return;
-      }
+      if (error) throw error;
 
       toast.success('Registration successful! Please login.');
       navigate('/shop/login');
     } catch (err: any) {
-      console.error('Registration error:', err);
-      toast.error(`Registration failed: ${err.message || 'Unknown error'}`);
+      console.warn('Supabase unreachable, using local storage:', err.message);
+
+      // ── Fallback: save to localStorage ──
+      const localShops = JSON.parse(localStorage.getItem('eco_local_shop_owners') || '[]');
+
+      // Check if already exists locally
+      if (localShops.some((s: any) => s.username === shopData.username || s.mobile === shopData.mobile)) {
+        toast.error('Username or mobile number already registered.');
+        setSubmitting(false);
+        return;
+      }
+
+      localShops.push(shopData);
+      localStorage.setItem('eco_local_shop_owners', JSON.stringify(localShops));
+
+      toast.success('Registration successful! Please login.');
+      navigate('/shop/login');
+    } finally {
       setSubmitting(false);
     }
   };

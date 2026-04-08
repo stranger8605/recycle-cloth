@@ -20,31 +20,84 @@ const ShopOwnerLoginPage = () => {
     if (!canSubmit) return;
     setSubmitting(true);
 
-    const { data, error } = await supabase
-      .from('shop_owners')
-      .select('*')
-      .eq('username', username.trim())
-      .eq('password', password)
-      .limit(1);
+    try {
+      const { data, error } = await supabase
+        .from('shop_owners')
+        .select('*')
+        .eq('username', username.trim())
+        .eq('password', password)
+        .limit(1);
 
-    if (error || !data || data.length === 0) {
-      toast.error('Invalid username or password.');
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        // Check localStorage fallback
+        const localShops = JSON.parse(localStorage.getItem('eco_local_shop_owners') || '[]');
+        const localUser = localShops.find(
+          (s: any) => s.username === username.trim() && s.password === password
+        );
+
+        if (!localUser) {
+          toast.error('Invalid username or password.');
+          setSubmitting(false);
+          return;
+        }
+
+        loginAsShopOwner({
+          id: localUser.id,
+          username: localUser.username,
+          name: localUser.name,
+          shop_name: localUser.shop_name,
+          shop_location: localUser.shop_location,
+          mobile: localUser.mobile,
+        });
+
+        toast.success(`Welcome back, ${localUser.name}!`);
+        navigate('/shop/dashboard');
+        return;
+      }
+
+      const user = data[0];
+      loginAsShopOwner({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        shop_name: user.shop_name,
+        shop_location: user.shop_location,
+        mobile: user.mobile,
+      });
+
+      toast.success(`Welcome back, ${user.name}!`);
+      navigate('/shop/dashboard');
+    } catch (err: any) {
+      console.warn('Supabase unreachable, trying local storage:', err.message);
+
+      // Fallback: check localStorage
+      const localShops = JSON.parse(localStorage.getItem('eco_local_shop_owners') || '[]');
+      const localUser = localShops.find(
+        (s: any) => s.username === username.trim() && s.password === password
+      );
+
+      if (!localUser) {
+        toast.error('Invalid username or password.');
+        setSubmitting(false);
+        return;
+      }
+
+      loginAsShopOwner({
+        id: localUser.id,
+        username: localUser.username,
+        name: localUser.name,
+        shop_name: localUser.shop_name,
+        shop_location: localUser.shop_location,
+        mobile: localUser.mobile,
+      });
+
+      toast.success(`Welcome back, ${localUser.name}!`);
+      navigate('/shop/dashboard');
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    const user = data[0];
-    loginAsShopOwner({
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      shop_name: user.shop_name,
-      shop_location: user.shop_location,
-      mobile: user.mobile,
-    });
-
-    toast.success(`Welcome back, ${user.name}!`);
-    navigate('/shop/dashboard');
   };
 
   return (

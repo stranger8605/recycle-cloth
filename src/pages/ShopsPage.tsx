@@ -23,14 +23,37 @@ const ShopsPage = () => {
   useEffect(() => {
     const fetchShops = async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('shop_owners')
-        .select('id, shop_name, shop_location, name, mobile_verified');
+      try {
+        const { data, error } = await supabase
+          .from('shop_owners')
+          .select('id, shop_name, shop_location, name, mobile_verified');
 
-      if (error) {
-        console.error('Fetch shops error:', error);
-      } else {
-        setShops(data || []);
+        if (error) throw error;
+
+        // Merge with local shop owners
+        const localShops: ShopData[] = JSON.parse(localStorage.getItem('eco_local_shop_owners') || '[]').map((s: any) => ({
+          id: s.id,
+          shop_name: s.shop_name,
+          shop_location: s.shop_location,
+          name: s.name,
+          mobile_verified: s.mobile_verified ?? true,
+        }));
+
+        const supabaseIds = new Set((data || []).map((s) => s.id));
+        const uniqueLocalShops = localShops.filter((s) => !supabaseIds.has(s.id));
+        setShops([...(data || []), ...uniqueLocalShops]);
+      } catch (err: any) {
+        console.warn('Supabase unreachable, loading shops from localStorage:', err.message);
+
+        // Fallback: load from localStorage only
+        const localShops: ShopData[] = JSON.parse(localStorage.getItem('eco_local_shop_owners') || '[]').map((s: any) => ({
+          id: s.id,
+          shop_name: s.shop_name,
+          shop_location: s.shop_location,
+          name: s.name,
+          mobile_verified: s.mobile_verified ?? true,
+        }));
+        setShops(localShops);
       }
       setLoading(false);
     };

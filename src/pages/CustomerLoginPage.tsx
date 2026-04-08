@@ -20,29 +20,72 @@ const CustomerLoginPage = () => {
     if (!canSubmit) return;
     setSubmitting(true);
 
-    const { data, error } = await supabase
-      .from('customers')
-      .select('*')
-      .eq('username', username.trim())
-      .eq('password', password)
-      .limit(1);
+    try {
+      // Try Supabase first
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('username', username.trim())
+        .eq('password', password)
+        .limit(1);
 
-    if (error || !data || data.length === 0) {
-      toast.error('Invalid username or password.');
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        // Also check local storage before showing error
+        const localUser = checkLocalStorage();
+        if (localUser) return;
+
+        toast.error('Invalid username or password.');
+        setSubmitting(false);
+        return;
+      }
+
+      const user = data[0];
+      loginAsCustomer({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        mobile: user.mobile,
+        district: user.district || '',
+        address: user.address || '',
+      });
+
+      toast.success(`Welcome back, ${user.name}!`);
+      navigate('/clothes');
+    } catch (err: any) {
+      console.warn('Supabase unreachable, trying local storage:', err.message);
+
+      // ── Fallback: check localStorage ──
+      const localUser = checkLocalStorage();
+      if (!localUser) {
+        toast.error('Invalid username or password.');
+      }
       setSubmitting(false);
-      return;
     }
+  };
 
-    const user = data[0];
-    loginAsCustomer({
-      id: user.id,
-      username: user.username,
-      name: user.name,
-      mobile: user.mobile,
-    });
+  const checkLocalStorage = (): boolean => {
+    const localCustomers = JSON.parse(localStorage.getItem('eco_local_customers') || '[]');
+    const user = localCustomers.find(
+      (c: any) => c.username === username.trim() && c.password === password
+    );
 
-    toast.success(`Welcome back, ${user.name}!`);
-    navigate('/clothes');
+    if (user) {
+      loginAsCustomer({
+        id: user.id,
+        username: user.username,
+        name: user.name,
+        mobile: user.mobile,
+        district: user.district || '',
+        address: user.address || '',
+      });
+
+      toast.success(`Welcome back, ${user.name}!`);
+      navigate('/clothes');
+      return true;
+    }
+    return false;
   };
 
   return (

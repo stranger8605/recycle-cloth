@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 export type UserRole = 'customer' | 'shop_owner' | 'admin';
 
@@ -7,6 +7,8 @@ export interface CustomerUser {
   username: string;
   name: string;
   mobile: string;
+  district?: string;
+  address?: string;
 }
 
 export interface ShopOwnerUser {
@@ -38,16 +40,24 @@ interface AuthContextType {
   logout: () => void;
 }
 
-const initialAuth: AuthState = {
-  isLoggedIn: false,
-  role: null,
-  user: null,
+const AUTH_STORAGE_KEY = 'eco_threads_auth';
+
+const getStoredAuth = (): AuthState => {
+  try {
+    const stored = sessionStorage.getItem(AUTH_STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch {}
+  return { isLoggedIn: false, role: null, user: null };
 };
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [auth, setAuth] = useState<AuthState>(initialAuth);
+  const [auth, setAuth] = useState<AuthState>(getStoredAuth);
+
+  useEffect(() => {
+    sessionStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth));
+  }, [auth]);
 
   const loginAsCustomer = (user: CustomerUser) => {
     setAuth({ isLoggedIn: true, role: 'customer', user });
@@ -62,7 +72,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const logout = () => {
-    setAuth(initialAuth);
+    const initial = { isLoggedIn: false, role: null, user: null } as AuthState;
+    setAuth(initial);
+    sessionStorage.removeItem(AUTH_STORAGE_KEY);
   };
 
   return (

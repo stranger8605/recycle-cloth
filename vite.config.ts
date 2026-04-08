@@ -11,6 +11,20 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      '/api/callmebot': {
+        target: 'https://api.callmebot.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/callmebot/, ''),
+        secure: true,
+      },
+      '/api/twilio': {
+        target: 'https://api.twilio.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/twilio/, ''),
+        secure: true,
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

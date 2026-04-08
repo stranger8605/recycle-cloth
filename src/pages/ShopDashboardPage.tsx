@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Store, Package, Clock, CheckCircle2, IndianRupee, LogOut, RefreshCw, Phone, MapPin, Calendar } from 'lucide-react';
+import { Store, Package, Clock, CheckCircle2, IndianRupee, LogOut, RefreshCw, Phone, MapPin, Calendar, WifiOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth, ShopOwnerUser } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -13,20 +13,51 @@ const ShopDashboardPage = () => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [offlineMode, setOfflineMode] = useState(false);
+
+  // Guard: redirect to auth if not logged in as shop owner
+  useEffect(() => {
+    if (!auth.isLoggedIn || auth.role !== 'shop_owner' || !shopOwner) {
+      navigate('/auth');
+    }
+  }, [auth, navigate]);
+
+  const shopName = shopOwner?.shop_name || '';
 
   const fetchOrders = async () => {
+    if (!shopName) return;
     setRefreshing(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .eq('selected_shop', shopOwner.shop_name)
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('selected_shop', shopName)
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error('Fetch orders error:', error);
-      toast.error('Failed to load orders');
-    } else {
-      setOrders(data || []);
+      if (error) throw error;
+
+      // Merge with local orders
+      const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+      const localShopOrders = localOrders.filter(
+        (o: any) => o.selected_shop === shopName
+      );
+      const supabaseIds = new Set((data || []).map((o: any) => o.order_id));
+      const uniqueLocalOrders = localShopOrders.filter(
+        (o: any) => !supabaseIds.has(o.order_id)
+      );
+      const allOrders = [...(data || []), ...uniqueLocalOrders].sort(
+        (a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setOrders(allOrders);
+      setOfflineMode(false);
+    } catch (err: any) {
+      console.warn('Supabase unreachable, loading from localStorage:', err.message);
+      setOfflineMode(true);
+      const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+      const localShopOrders = localOrders
+        .filter((o: any) => o.selected_shop === shopName)
+        .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      setOrders(localShopOrders);
     }
     setLoading(false);
     setRefreshing(false);
@@ -34,24 +65,33 @@ const ShopDashboardPage = () => {
 
   useEffect(() => {
     fetchOrders();
-    // Auto-refresh every 30 seconds
     const interval = setInterval(fetchOrders, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [shopName]);
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: newStatus, updated_at: new Date().toISOString() } as any)
-      .eq('order_id', orderId);
-
-    if (error) {
-      toast.error('Failed to update status');
-      return;
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus, updated_at: new Date().toISOString() } as any)
+        .eq('order_id', orderId);
+      if (error) throw error;
+    } catch (err: any) {
+      console.warn('Supabase update failed, updating locally:', err.message);
+      const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+      const idx = localOrders.findIndex((o: any) => o.order_id === orderId);
+      if (idx !== -1) {
+        localOrders[idx].status = newStatus;
+        localOrders[idx].updated_at = new Date().toISOString();
+        localStorage.setItem('eco_local_orders', JSON.stringify(localOrders));
+      }
     }
-
+    setOrders(prev =>
+      prev.map(o =>
+        o.order_id === orderId ? { ...o, status: newStatus, updated_at: new Date().toISOString() } : o
+      )
+    );
     toast.success(`Order ${orderId} marked as ${newStatus}`);
-    fetchOrders();
   };
 
   const handleLogout = () => {
@@ -107,9 +147,16 @@ const ShopDashboardPage = () => {
                 </p>
               </div>
             </div>
-            <button onClick={handleLogout} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
-              <LogOut className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2">
+              {offlineMode && (
+                <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-lg text-xs font-medium">
+                  <WifiOff className="w-3 h-3" /> Offline
+                </div>
+              )}
+              <button onClick={handleLogout} className="p-2 rounded-lg bg-white/20 hover:bg-white/30 transition-colors">
+                <LogOut className="w-5 h-5" />
+              </button>
+            </div>
           </div>
 
           {/* Stats Grid */}

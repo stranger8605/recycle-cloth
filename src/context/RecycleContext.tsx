@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 
 interface RecycleState {
-
+  // Profile
+  gender: string;
+  ageRange: string;
   // Clothes
   selectedClothes: string[];
   clothPhotos: string[];
@@ -18,8 +20,12 @@ interface RecycleState {
   pickupTime: string;
   // Quantities
   clothQuantities: Record<string, number>;
+  // Quality (from photo scan)
+  qualityMultiplier: number;
   // Payment
   paymentMethod: string;
+  // Redeem
+  redeemOption: string;
   // Order
   orderId: string;
 }
@@ -31,7 +37,8 @@ interface RecycleContextType {
 }
 
 const initialState: RecycleState = {
-
+  gender: '',
+  ageRange: '',
   selectedClothes: [],
   clothPhotos: [],
   district: '',
@@ -42,20 +49,39 @@ const initialState: RecycleState = {
   pickupDate: '',
   pickupTime: '',
   clothQuantities: {},
+  qualityMultiplier: 1.0,
   paymentMethod: '',
+  redeemOption: '',
   orderId: '',
+};
+
+const RECYCLE_STORAGE_KEY = 'eco_threads_recycle';
+
+const getStoredState = (): RecycleState => {
+  try {
+    const stored = sessionStorage.getItem(RECYCLE_STORAGE_KEY);
+    if (stored) return { ...initialState, ...JSON.parse(stored) };
+  } catch {}
+  return initialState;
 };
 
 const RecycleContext = createContext<RecycleContextType | null>(null);
 
 export const RecycleProvider = ({ children }: { children: ReactNode }) => {
-  const [state, setState] = useState<RecycleState>(initialState);
+  const [state, setState] = useState<RecycleState>(getStoredState);
+
+  useEffect(() => {
+    sessionStorage.setItem(RECYCLE_STORAGE_KEY, JSON.stringify(state));
+  }, [state]);
 
   const update = (partial: Partial<RecycleState>) => {
     setState(prev => ({ ...prev, ...partial }));
   };
 
-  const reset = () => setState(initialState);
+  const reset = () => {
+    setState(initialState);
+    sessionStorage.removeItem(RECYCLE_STORAGE_KEY);
+  };
 
   return (
     <RecycleContext.Provider value={{ state, update, reset }}>

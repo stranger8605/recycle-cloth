@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Search, RefreshCw, Package, Clock, CheckCircle2, XCircle, Trash2, Eye, FileDown } from 'lucide-react';
+import { Search, RefreshCw, Package, Clock, CheckCircle2, XCircle, Trash2, Eye, FileDown, WifiOff } from 'lucide-react';
 import { generateAdminReportPdf } from '@/lib/generateAdminReportPdf';
 import { generateAdminReportCsv } from '@/lib/generateAdminReportCsv';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -43,18 +43,64 @@ const AdminPage = () => {
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [offlineMode, setOfflineMode] = useState(false);
+
+  const getLocalOrders = (): Order[] => {
+    try {
+      const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+      return localOrders.map((o: any) => ({
+        id: o.id || o.order_id,
+        order_id: o.order_id,
+        phone: o.phone || null,
+        selected_clothes: o.selected_clothes || null,
+        cloth_quantities: o.cloth_quantities || null,
+        district: o.district || null,
+        category: o.category || null,
+        selected_shop: o.selected_shop || null,
+        address: o.address || null,
+        contact_phone: o.contact_phone || null,
+        pickup_date: o.pickup_date || null,
+        pickup_time: o.pickup_time || null,
+        payment_method: o.payment_method || null,
+        total_items: o.total_items || null,
+        total_amount: o.total_amount || null,
+        status: o.status || 'pending',
+        created_at: o.created_at || new Date().toISOString(),
+      }));
+    } catch {
+      return [];
+    }
+  };
 
   const fetchOrders = async () => {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('orders')
-      .select('*')
-      .order('created_at', { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-    if (error) {
-      toast.error('Failed to fetch orders');
-    } else {
-      setOrders((data as unknown as Order[]) || []);
+      if (error) throw error;
+
+      // Merge with local orders
+      const localOrders = getLocalOrders();
+      const supabaseIds = new Set((data || []).map((o: any) => o.order_id));
+      const uniqueLocalOrders = localOrders.filter((o) => !supabaseIds.has(o.order_id));
+      const allOrders = [...(data as unknown as Order[] || []), ...uniqueLocalOrders].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+
+      setOrders(allOrders);
+      setOfflineMode(false);
+    } catch (err: any) {
+      console.warn('Supabase unreachable, loading from localStorage:', err.message);
+      setOfflineMode(true);
+
+      // Load from localStorage only
+      const localOrders = getLocalOrders().sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      setOrders(localOrders);
     }
     setLoading(false);
   };
@@ -64,31 +110,45 @@ const AdminPage = () => {
   }, []);
 
   const updateStatus = async (id: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: newStatus, updated_at: new Date().toISOString() } as any)
-      .eq('id', id);
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: newStatus, updated_at: new Date().toISOString() } as any)
+        .eq('id', id);
 
-    if (error) {
-      toast.error('Failed to update status');
-    } else {
-      toast.success(`Status updated to ${newStatus}`);
-      setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
-      if (selectedOrder?.id === id) {
-        setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
+      if (error) throw error;
+    } catch {
+      // Update locally
+      const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+      const idx = localOrders.findIndex((o: any) => o.order_id === id || o.id === id);
+      if (idx !== -1) {
+        localOrders[idx].status = newStatus;
+        localOrders[idx].updated_at = new Date().toISOString();
+        localStorage.setItem('eco_local_orders', JSON.stringify(localOrders));
       }
+    }
+
+    toast.success(`Status updated to ${newStatus}`);
+    setOrders(prev => prev.map(o => o.id === id ? { ...o, status: newStatus } : o));
+    if (selectedOrder?.id === id) {
+      setSelectedOrder(prev => prev ? { ...prev, status: newStatus } : null);
     }
   };
 
   const deleteOrder = async (id: string) => {
-    const { error } = await supabase.from('orders').delete().eq('id', id);
-    if (error) {
-      toast.error('Failed to delete order');
-    } else {
-      toast.success('Order deleted');
-      setOrders(prev => prev.filter(o => o.id !== id));
-      if (selectedOrder?.id === id) setSelectedOrder(null);
+    try {
+      const { error } = await supabase.from('orders').delete().eq('id', id);
+      if (error) throw error;
+    } catch {
+      // Delete locally
+      const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+      const filtered = localOrders.filter((o: any) => o.order_id !== id && o.id !== id);
+      localStorage.setItem('eco_local_orders', JSON.stringify(filtered));
     }
+
+    toast.success('Order deleted');
+    setOrders(prev => prev.filter(o => o.id !== id));
+    if (selectedOrder?.id === id) setSelectedOrder(null);
   };
 
   const filtered = orders.filter(o => {
@@ -117,12 +177,20 @@ const AdminPage = () => {
             <h1 className="text-xl font-bold text-foreground">🤖 Super Bot Admin</h1>
             <p className="text-sm text-muted-foreground">Database Manager</p>
           </div>
-          <button
-            onClick={fetchOrders}
-            className="p-2 rounded-lg border border-border hover:bg-accent transition-colors"
-          >
-            <RefreshCw className={`w-5 h-5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          <div className="flex items-center gap-2">
+            {offlineMode && (
+              <div className="flex items-center gap-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 px-3 py-1.5 rounded-lg text-xs font-medium">
+                <WifiOff className="w-3.5 h-3.5" />
+                Offline Mode
+              </div>
+            )}
+            <button
+              onClick={fetchOrders}
+              className="p-2 rounded-lg border border-border hover:bg-accent transition-colors"
+            >
+              <RefreshCw className={`w-5 h-5 text-muted-foreground ${loading ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -284,7 +352,9 @@ const AdminPage = () => {
                   ['Shop', selectedOrder.selected_shop],
                   ['Address', selectedOrder.address],
                   ['Pickup', `${selectedOrder.pickup_date || ''} ${selectedOrder.pickup_time || ''}`],
-                  ['Payment', selectedOrder.payment_method],
+                  ['Payment', selectedOrder.payment_method?.startsWith('redeem:')
+                    ? `🎁 Redeem (${selectedOrder.payment_method.replace('redeem:', '').replace(/-/g, ' ')})`
+                    : selectedOrder.payment_method],
                   ['Items', selectedOrder.total_items],
                   ['Amount', selectedOrder.category === 'orphanage' ? 'Free' : `₹${selectedOrder.total_amount || 0}`],
                   ['Created', new Date(selectedOrder.created_at).toLocaleString()],

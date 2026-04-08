@@ -1,6 +1,7 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useRecycle } from '@/context/RecycleContext';
+import { useAuth, CustomerUser } from '@/context/AuthContext';
 import StepLayout from '@/components/StepLayout';
 import { Check, Camera, X, ImagePlus } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,9 +20,23 @@ const clothTypes = [
 const ClothesPage = () => {
   const navigate = useNavigate();
   const { state, update } = useRecycle();
+  const { auth } = useAuth();
   const [selected, setSelected] = useState<string[]>(state.selectedClothes);
   const [photos, setPhotos] = useState<string[]>(state.clothPhotos || []);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Pre-fill district and address from logged-in customer
+  useEffect(() => {
+    if (auth.role === 'customer' && auth.user) {
+      const customer = auth.user as CustomerUser;
+      if (customer.district && !state.district) {
+        update({ district: customer.district });
+      }
+      if (customer.address && !state.address) {
+        update({ address: customer.address });
+      }
+    }
+  }, []);
 
   const toggle = (id: string) => {
     setSelected((prev) =>

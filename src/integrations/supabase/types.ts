@@ -27,6 +27,7 @@ export type Database = {
           gender: string | null
           phone: string | null
           address: string | null
+          district: string | null
           photo_url: string | null
         }
         Insert: {
@@ -41,6 +42,7 @@ export type Database = {
           gender?: string | null
           phone?: string | null
           address?: string | null
+          district?: string | null
           photo_url?: string | null
         }
         Update: {
@@ -55,6 +57,7 @@ export type Database = {
           gender?: string | null
           phone?: string | null
           address?: string | null
+          district?: string | null
           photo_url?: string | null
         }
         Relationships: []
@@ -112,6 +115,7 @@ export type Database = {
           pickup_date: string | null
           pickup_time: string | null
           selected_clothes: string[] | null
+          cloth_photos: string[] | null
           selected_shop: string | null
           status: string
           total_amount: number | null
@@ -134,6 +138,7 @@ export type Database = {
           pickup_date?: string | null
           pickup_time?: string | null
           selected_clothes?: string[] | null
+          cloth_photos?: string[] | null
           selected_shop?: string | null
           status?: string
           total_amount?: number | null
@@ -156,6 +161,7 @@ export type Database = {
           pickup_date?: string | null
           pickup_time?: string | null
           selected_clothes?: string[] | null
+          cloth_photos?: string[] | null
           selected_shop?: string | null
           status?: string
           total_amount?: number | null

@@ -4,6 +4,7 @@ import { useRecycle } from '@/context/RecycleContext';
 import StepLayout from '@/components/StepLayout';
 import { Minus, Plus, Camera, ImagePlus, X, Scan, Sparkles } from 'lucide-react';
 import { sendOrderNotification } from '@/lib/twilioService';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { analyzeClothImage, ClothAnalysisResult } from '@/lib/clothAnalyzer';
 import ClothScanner from '@/components/ClothScanner';
@@ -113,7 +114,26 @@ const QuantityPage = () => {
         )
       );
 
-      toast.success(`Analysis complete: ${result.quality} quality (${result.qualityScore}/100)`);
+      // ──── Auto-add detected cloth type & count ────
+      const clothType = result.detectedClothType;
+      const count = result.detectedCount;
+      const clothLabel = clothData[clothType]?.label || clothType;
+
+      // Add to selected clothes if not already selected
+      if (!state.selectedClothes.includes(clothType)) {
+        update({ selectedClothes: [...state.selectedClothes, clothType] });
+      }
+
+      // Add detected count to quantities
+      setQuantities((prev) => ({
+        ...prev,
+        [clothType]: (prev[clothType] || 0) + count,
+      }));
+
+      toast.success(
+        `📸 Detected: ${clothLabel} × ${count} (${result.quality} quality)`,
+        { duration: 4000 }
+      );
     } catch {
       setIsScanning(false);
       toast.error('Failed to analyze image.');
@@ -142,11 +162,51 @@ const QuantityPage = () => {
 
   const totalItems = Object.values(quantities).reduce((sum, q) => sum + q, 0);
 
-  const handleNext = () => {
+  const handleNext = async () => {
     const photoUrls = photos.map((p) => p.dataUrl);
-    update({ clothQuantities: quantities, clothPhotos: photoUrls });
+
+    // Calculate average quality multiplier from scanned photos
+    const scannedPhotos = photos.filter((p) => p.result);
+    const avgMultiplier = scannedPhotos.length > 0
+      ? scannedPhotos.reduce((sum, p) => sum + (p.result?.priceMultiplier || 1), 0) / scannedPhotos.length
+      : 1.0;
+
+    update({ clothQuantities: quantities, clothPhotos: photoUrls, qualityMultiplier: Math.round(avgMultiplier * 100) / 100 });
     if (state.category === 'orphanage') {
       const orderId = 'RC' + Date.now().toString().slice(-8);
+      const totalItems = Object.values(quantities).reduce((s, q) => s + q, 0);
+
+      // Save donation order to database
+      const orderData = {
+        order_id: orderId,
+        phone: state.contactPhone,
+        selected_clothes: state.selectedClothes,
+        cloth_photos: photoUrls || [],
+        cloth_quantities: quantities as any,
+        district: state.district,
+        category: state.category,
+        selected_shop: state.selectedShop,
+        address: state.address,
+        contact_phone: state.contactPhone,
+        pickup_date: state.pickupDate,
+        pickup_time: state.pickupTime,
+        payment_method: 'donation',
+        total_items: totalItems,
+        total_amount: 0,
+        status: 'pending',
+        created_at: new Date().toISOString(),
+      };
+
+      try {
+        const { error } = await supabase.from('orders').insert(orderData as any);
+        if (error) throw error;
+      } catch (err: any) {
+        console.warn('Supabase unreachable, saving donation order locally:', err.message);
+        const localOrders = JSON.parse(localStorage.getItem('eco_local_orders') || '[]');
+        localOrders.push(orderData);
+        localStorage.setItem('eco_local_orders', JSON.stringify(localOrders));
+      }
+
       update({ clothQuantities: quantities, clothPhotos: photoUrls, orderId });
 
       if (state.contactPhone) {
