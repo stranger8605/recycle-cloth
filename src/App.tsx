@@ -9,6 +9,7 @@ import HomePage from "./pages/HomePage";
 import AuthPortalPage from "./pages/AuthPortalPage";
 import CustomerLoginPage from "./pages/CustomerLoginPage";
 import CustomerRegisterPage from "./pages/CustomerRegisterPage";
+import CustomerOrdersPage from "./pages/CustomerOrdersPage";
 import ShopOwnerLoginPage from "./pages/ShopOwnerLoginPage";
 import ShopOwnerRegisterPage from "./pages/ShopOwnerRegisterPage";
 import AdminLoginPage from "./pages/AdminLoginPage";
@@ -55,6 +56,7 @@ const App = () => (
               <Route path="/admin/login" element={<AdminLoginPage />} />
 
               {/* Protected Recycling Flow */}
+              <Route path="/customer/orders" element={<ProtectedRoute allowedRoles={['customer']}><CustomerOrdersPage /></ProtectedRoute>} />
 
               <Route path="/clothes" element={<ProtectedRoute><ClothesPage /></ProtectedRoute>} />
 

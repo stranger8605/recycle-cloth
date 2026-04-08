@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Lock, Eye, EyeOff, ShoppingBag } from 'lucide-react';
+import { User, Lock, Eye, EyeOff, ShoppingBag, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -154,6 +154,14 @@ const CustomerLoginPage = () => {
               Register here
             </button>
           </p>
+
+          <button
+            onClick={() => navigate('/customer/orders')}
+            className="w-full py-3 rounded-xl border-2 border-primary/20 bg-accent/50 text-foreground font-medium flex items-center justify-center gap-2 hover:border-primary/40 hover:bg-accent transition-all"
+          >
+            <Package className="w-4 h-4 text-primary" />
+            View My Orders
+          </button>
 
           <button
             onClick={() => navigate('/auth')}
